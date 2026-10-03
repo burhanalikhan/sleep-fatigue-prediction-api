@@ -1,0 +1,67 @@
+trigger:
+  - main
+
+variables:
+  pythonVersion: '3.14'
+  azureServiceConnection: 'YOUR-AZURE-SERVICE-CONNECTION'
+  webAppName: 'YOUR-AZURE-APP-NAME'
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+stages:
+
+# =========================
+# BUILD / TEST
+# =========================
+- stage: Build
+  displayName: Build and Test
+
+  jobs:
+  - job: BuildAndTest
+    displayName: Install dependencies and test
+
+    steps:
+
+    - task: UsePythonVersion@0
+      inputs:
+        versionSpec: '$(pythonVersion)'
+      displayName: Use Python $(pythonVersion)
+
+    - script: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+      displayName: Install dependencies
+
+    - script: |
+        python -m pytest -v
+      displayName: Run tests
+
+# =========================
+# DEPLOY
+# =========================
+- stage: Deploy
+  displayName: Deploy to Azure App Service
+  dependsOn: Build
+  condition: succeeded()
+
+  jobs:
+  - job: Deploy
+    displayName: Deploy Flask application
+
+    steps:
+
+    - task: UsePythonVersion@0
+      inputs:
+        versionSpec: '$(pythonVersion)'
+      displayName: Use Python $(pythonVersion)
+
+    - task: AzureWebApp@1
+      displayName: Deploy Flask Web App
+      inputs:
+        azureSubscription: '$(azureServiceConnection)'
+        appType: 'webAppLinux'
+        appName: '$(webAppName)'
+        package: '$(System.DefaultWorkingDirectory)'
+        runtimeStack: 'PYTHON|3.14'
+        startUpCommand: 'gunicorn --bind=0.0.0.0:8000 app:app'
