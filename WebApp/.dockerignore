@@ -19,3 +19,9 @@ htmlcov/
 
 bedtime_screentime_sleep_debt.csv
 model.py
+test.py
+sleep_fatigue.onnx
+convert_model.py
+compare.py
+
+nginx/certs/
